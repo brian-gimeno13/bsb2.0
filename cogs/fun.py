@@ -6,12 +6,11 @@ Description:
 Version: 5.5.0
 """
 
-import random
-
 import aiohttp
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.utils import get
 
 from helpers import checks
 
@@ -34,21 +33,21 @@ class Choice(discord.ui.View):
         self.stop()
 
 
-class RockPaperScissors(discord.ui.Select):
+class Location(discord.ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(
-                label="Scissors", description="You choose scissors.", emoji="✂"
+                label="BWM", description="Broadway Mall, Hicksville."
             ),
             discord.SelectOption(
-                label="Rock", description="You choose rock.", emoji="🪨"
+                label="CRG", description="Crystal Run Galleria, Middletown."
             ),
             discord.SelectOption(
-                label="paper", description="You choose paper.", emoji="🧻"
+                label="Visitor", description="For our out of town friends!️"
             ),
         ]
         super().__init__(
-            placeholder="Choose...",
+            placeholder="Round1 Location...",
             min_values=1,
             max_values=1,
             options=options,
@@ -56,47 +55,42 @@ class RockPaperScissors(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         choices = {
-            "rock": 0,
-            "paper": 1,
-            "scissors": 2,
+            "bwm": 0,
+            "crg": 1,
+            "visitor": 2
         }
         user_choice = self.values[0].lower()
         user_choice_index = choices[user_choice]
-
-        bot_choice = random.choice(list(choices.keys()))
-        bot_choice_index = choices[bot_choice]
 
         result_embed = discord.Embed(color=0x9C84EF)
         result_embed.set_author(
             name=interaction.user.name, icon_url=interaction.user.avatar.url
         )
 
-        if user_choice_index == bot_choice_index:
-            result_embed.description = f"**That's a draw!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            result_embed.colour = 0xF59E42
-        elif user_choice_index == 0 and bot_choice_index == 2:
-            result_embed.description = f"**You won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            result_embed.colour = 0x9C84EF
-        elif user_choice_index == 1 and bot_choice_index == 0:
-            result_embed.description = f"**You won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            result_embed.colour = 0x9C84EF
-        elif user_choice_index == 2 and bot_choice_index == 1:
-            result_embed.description = f"**You won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            result_embed.colour = 0x9C84EF
+        if user_choice_index == 0:
+            role = get(interaction.guild.roles, id=1124389027139813406)
+            await interaction.user.add_roles(role)
+            result_embed.description = "Thanks for joining BWM, " + interaction.user.name + "!"
+            result_embed.colour = 0xECF542
+        elif user_choice_index == 1:
+            role = get(interaction.guild.roles, id=1124390274798473279)
+            await interaction.user.add_roles(role)
+            result_embed.description = "Thanks for joining CRG, " + interaction.user.name + "!"
+            result_embed.colour = 0x42F5D1
         else:
-            result_embed.description = (
-                f"**I won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            )
-            result_embed.colour = 0xE02B2B
+            role = get(interaction.guild.roles, id=1124390314677915658)
+            await interaction.user.add_roles(role)
+            result_embed.description = "Thanks for stopping in, " + interaction.user.name + "!"
+            result_embed.colour = 0x424BF5
         await interaction.response.edit_message(
             embed=result_embed, content=None, view=None
         )
 
 
-class RockPaperScissorsView(discord.ui.View):
+class LocationView(discord.ui.View):
     def __init__(self):
         super().__init__()
-        self.add_item(RockPaperScissors())
+        self.add_item(Location())
 
 
 class Fun(commands.Cog, name="fun"):
@@ -155,16 +149,16 @@ class Fun(commands.Cog, name="fun"):
         await message.edit(embed=embed, view=None, content=None)
 
     @commands.hybrid_command(
-        name="rps", description="Play the rock paper scissors game against the bot."
+        name="location", description="Gain a role for your go-to Round1 location.", ephemeral=True
     )
     @checks.not_blacklisted()
-    async def rock_paper_scissors(self, context: Context) -> None:
+    async def location(self, context: Context) -> None:
         """
         Play the rock paper scissors game against the bot.
 
         :param context: The hybrid command context.
         """
-        view = RockPaperScissorsView()
+        view = LocationView()
         await context.send("Please make your choice", view=view)
 
 
